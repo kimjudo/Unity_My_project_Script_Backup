@@ -1,32 +1,34 @@
 using System;
-using System.Xml.Serialization;
 using UnityEngine;
 
-public class Addiction : MonoBehaviour
+public class Addiction : StatBase
 {
-    [SerializeField] private float max = 100f;
-    [SerializeField] private float min = 0f;
     [SerializeField] private Health health;
+    public event Action<float, float> OnAddictionChanged;
 
-    public float Max => max;
-    public float Min => min;
-    public float Current { get; private set; }
-
-    public event Action<float, float> onAddictionChanged;
-
-    public void increaseAddiction(float amount)
+    protected override void Awake()
     {
-        Current = Mathf.Clamp(Current + amount, min, max);
-        Notify();
+        base.Awake();
+        OnStatChanged += HandleStatChanged;
+        HandleStatChanged(Current, Max); // 초기 동기화
     }
+    private void OnDestroy()
+    {
+        OnStatChanged -= HandleStatChanged;
+    }
+    private void HandleStatChanged(float current, float max)
+    {
+        OnAddictionChanged?.Invoke(current, max);
+    }
+    public void IncreaseAddiction(float amount)
+    {
+        if (amount <= 0f) return;
+        Change(amount);
+    }
+
     public void DecreaseAddiction(float amount)
     {
-        Current = Mathf.Clamp(Current - amount, min, max);
-        Notify();
+        if (amount <= 0f) return;
+        Change(-amount);
     }
-    private void Notify()
-    {
-        onAddictionChanged?.Invoke(Current, max);
-    }
-
 }

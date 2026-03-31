@@ -1,9 +1,8 @@
 using System;
 using UnityEngine;
 
-public class Sanity : MonoBehaviour
+public class Sanity : StatBase
 {
-    [SerializeField] private float max = 100f;
     [SerializeField] private float sanityDecreasePerSecond = 1f;
     [SerializeField] private float sanityDecreaseWhenCaught = 10f;
     [SerializeField] private bool isInSafeZone = true;
@@ -12,21 +11,27 @@ public class Sanity : MonoBehaviour
     [SerializeField] private Health health;
 
     private float lastDamageSanityTime = -999f;
-    public float Max => max;
-    public float Current { get; private set; }
     public float DecreaseWhenCaught => sanityDecreaseWhenCaught;
 
-    public event Action<float, float> onSanityChanged;
-    private void Awake()
+    public event Action<float, float> OnSanityChanged;
+    protected override void Awake()
     {
-        Current = max;
-        Notify();
+        base.Awake();
+        OnStatChanged += HandleStatChanged;
+    }
+    private void OnDestroy()
+    {
+        OnStatChanged -= HandleStatChanged;
+    }
+    private void HandleStatChanged(float current, float max)
+    {
+        OnSanityChanged?.Invoke(current, max);
     }
     private void Update()
     {
         if (!isInSafeZone)
         {
-            DecreaseSanity(sanityDecreasePerSecond * Time.deltaTime); //안전지데가 아닐 떄 감소
+            DecreaseSanity(sanityDecreasePerSecond * Time.deltaTime);
         }
         else
         {
@@ -46,31 +51,19 @@ public class Sanity : MonoBehaviour
     public void DecreaseSanity(float amount)
     {
         if (amount <= 0f) return;
-        Current = Mathf.Clamp(Current - amount, 0f, max);
-        Notify();
+        Change(-amount);
     }
     public void HandleDamaged(float amount)
     {
         if (Time.time < lastDamageSanityTime + damageSanityCooldown) return;
         lastDamageSanityTime = Time.time;
-
-        float finalAmount = amount;
-        DecreaseSanity(finalAmount);
-    }
-    private void Notify()
-    {
-        onSanityChanged?.Invoke(Current, max);
+        DecreaseSanity(amount);
     }
     public void HealSanity(float amount)
     {
         if (amount <= 0f) return;
-        if (Current >= max) return;
 
-        float before = Current;
-        Current = Mathf.Clamp(Current + amount, 0f, max);
-
-        if (!Mathf.Approximately(before, Current))
-            Notify();
+        Change(amount);
     }
     private void Panicked()
     {

@@ -1,30 +1,41 @@
 using System;
 using UnityEngine;
 
-public class Health : MonoBehaviour, IDamageable
+public class Health : StatBase, IDamageable
 {
-    [SerializeField] private float maxHealth = 100f;
     [SerializeField] private StatusEffects statusEffects;
     [SerializeField] private ArmorSystem armorSystem;
 
-    public float MaxHealth => maxHealth;
-    public float CurrentHealth { get; private set; }
+    public float MaxHealth => Max; // StatBase를 상속을 받아도 기기존 코드 호환과 편의성
+    public float CurrentHealth => Current;
     public bool IsDead { get; private set; }
 
     public event Action onDeath;
     public event Action<float, float> onHealthChanged;
     public event Action<float> onDamaged;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         if (statusEffects == null) statusEffects = GetComponent<StatusEffects>();
         if (armorSystem == null) armorSystem = GetComponent<ArmorSystem>();
 
-        CurrentHealth = maxHealth;
+        OnStatChanged += HandleStatChanged;
+
+        // 초기 UI 동기화용
+        HandleStatChanged(Current, Max);
     }
-    private void Start()
+        private void OnDestroy()
     {
-        onHealthChanged?.Invoke(CurrentHealth, maxHealth);
+        OnStatChanged -= HandleStatChanged;
+    }
+    private void HandleStatChanged(float current, float max)
+    {
+        onHealthChanged?.Invoke(current, max);
+
+        if (!IsDead && current <= 0f)
+            Die();
     }
     public void TakeDamage(int damage, StatusEffects.DamageType damageType)
     {
@@ -38,29 +49,19 @@ public class Health : MonoBehaviour, IDamageable
 
         if (statusEffects != null)
             statusEffects.HandleStatusEffect(damageType);
+
         onDamaged?.Invoke(finalDamage);
     }
-
     public void ApplyRawDamage(float damage)
     {
         if (IsDead || damage <= 0f) return;
-
-        CurrentHealth = Mathf.Clamp(CurrentHealth - damage, 0f, maxHealth);
-        onHealthChanged?.Invoke(CurrentHealth, maxHealth);
-
-        if (CurrentHealth <= 0f)
-            Die();
+        Change(-damage);
     }
-
     public void Heal(float amount)
     {
         if (IsDead || amount <= 0f) return;
-
-        CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0f, maxHealth);
-        onHealthChanged?.Invoke(CurrentHealth, maxHealth);
-
+        Change(amount);
     }
-
     private void Die()
     {
         if (IsDead) return;

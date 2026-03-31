@@ -14,7 +14,7 @@ public class PillItem : Item
         if (sanity == null || addiction == null) return false;
 
         sanity.HealSanity(sanityHeal);
-        addiction.increaseAddiction(addictionGain);
+        addiction.IncreaseAddiction(addictionGain);
         return true;
     }
 }

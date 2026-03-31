@@ -1,41 +1,44 @@
 using System;
 using UnityEngine;
 
-public class Hunger : MonoBehaviour
+public class Hunger : StatBase
 {
-    [SerializeField] private float max = 100f;
     [SerializeField] private float hungerAmount = 0.3f;
     [SerializeField] private float tickInterval = 10f;
 
-    public float Max => max;
-    public float Current { get; private set; }
+    private float tickTimer = 0f;
 
-    public event Action<float, float> onhungerChanged;
+    public event Action<float, float> OnHungerChanged;
 
-    private void Awake()
+    protected override void Awake()
     {
-        Current = max;
-        Notify();
+        base.Awake();
+        OnStatChanged += HandleStatChanged;
+        HandleStatChanged(Current, Max); // 초기 동기화
     }
-    float tickTimer = 0f;
+
+    private void OnDestroy()
+    {
+        OnStatChanged -= HandleStatChanged;
+    }
+
+    private void HandleStatChanged(float current, float max)
+    {
+        OnHungerChanged?.Invoke(current, max);
+    }
+
     private void Update()
     {
         tickTimer += Time.deltaTime;
         if (tickTimer < tickInterval) return;
-        Current = Mathf.Clamp(Current - hungerAmount, 0f, max);
+
+        Change(-hungerAmount);
         tickTimer = 0f;
-        onhungerChanged?.Invoke(Current, max);
     }
 
     public void Eat(float amount)
     {
         if (amount <= 0f) return;
-        Current = Mathf.Clamp(Current + amount, 0f, max);
-        Notify();
-    }
-
-    private void Notify()
-    {
-        onhungerChanged?.Invoke(Current, max);
+        Change(amount);
     }
 }

@@ -1,49 +1,57 @@
 using System;
 using UnityEngine;
 
-public class Stamina : MonoBehaviour
+public class Stamina : StatBase
 {
     [Header("Stamina")]
-    [SerializeField] private float maxStamina = 100f;
     [SerializeField] private float regenPerSec = 15f;
-    [SerializeField] private float regenDelay = 0.5f;//회복 대기 시간
+    [SerializeField] private float regenDelay = 0.5f; // 회복 대기 시간
     [SerializeField] private BarUI staminaUI;
 
-    public float Max => maxStamina;
-    public float Current { get; private set; }
+    public float MaxStamina => Max; // 기존 코드 호환용
 
-    public event Action<float, float> onStaminaChanged;
+    public event Action<float, float> OnStaminaChanged;
 
     private float regenTimer;
 
-    private void Awake()
+    protected override void Awake()
     {
-        Current = maxStamina;
+        base.Awake();
+        OnStatChanged += HandleStatChanged;
     }
 
     private void Start()
     {
-        // UI가 준비된 다음에 호출
-        staminaUI?.SetNormalized(Current / maxStamina);
-        onStaminaChanged?.Invoke(Current, maxStamina);
+        HandleStatChanged(Current, Max); // 초기 동기화
+    }
+
+    private void OnDestroy()
+    {
+        OnStatChanged -= HandleStatChanged;
+    }
+
+    private void HandleStatChanged(float current, float max)
+    {
+        OnStaminaChanged?.Invoke(current, max);
+
+        if (max > 0f)
+            staminaUI?.SetNormalized(current / max);
+        else
+            staminaUI?.SetNormalized(0f);
     }
 
     private void Update()
     {
-        // 회복
         if (regenTimer > 0f)
         {
             regenTimer -= Time.deltaTime;
-            staminaUI.SetNormalized(Current / maxStamina);
             return;
         }
 
-        if (Current < maxStamina)
+        if (Current < Max)
         {
-            Current = Mathf.Min(maxStamina, Current + regenPerSec * Time.deltaTime);
-            Notify();
+            Change(regenPerSec * Time.deltaTime);
         }
-        staminaUI.SetNormalized(Current / maxStamina);
     }
 
     public bool CanSpend(float amount) => amount > 0f && Current >= amount;
@@ -52,14 +60,8 @@ public class Stamina : MonoBehaviour
     {
         if (!CanSpend(amount)) return false;
 
-        Current = Mathf.Max(0f, Current - amount);
+        Change(-amount);
         regenTimer = regenDelay;
-        Notify();
         return true;
-    }
-
-    private void Notify()
-    {
-        onStaminaChanged?.Invoke(Current, maxStamina);
     }
 }

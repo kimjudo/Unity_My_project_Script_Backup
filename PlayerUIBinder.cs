@@ -38,23 +38,23 @@ public class PlayerUIBinder : MonoBehaviour
         }
         if (thirst != null)
         {
-            thirst.onThirstChanged += OnThirstChanged;
+            thirst.OnThirstChanged += OnThirstChanged;
             OnThirstChanged(thirst.Current, thirst.Max);
         }
         if(hunger != null)
         {
-            hunger.onhungerChanged += OnHungerChanged;
+            hunger.OnHungerChanged += OnHungerChanged;
             OnHungerChanged(hunger.Current, hunger.Max);
         }
         if(sanity != null)
         {
-            sanity.onSanityChanged += OnSanityChanged;
+            sanity.OnSanityChanged += OnSanityChanged;
             OnSanityChanged(sanity.Current, sanity.Max);
         }
         if(addiction != null)
         {
-            addiction.onAddictionChanged += OnAddiction;
-            OnAddiction(addiction.Current, addiction.Min);
+            addiction.OnAddictionChanged += OnAddiction;
+            OnAddiction(addiction.Current, addiction.Max);
         }
         Hud?.SetArmor(armorSystem != null ? armorSystem.protectionAmount : 0);
     }
@@ -68,13 +68,13 @@ public class PlayerUIBinder : MonoBehaviour
             health.onDamaged -= OnDamaged;
         }
         if (thirst != null)
-            thirst.onThirstChanged -= OnThirstChanged;
+            thirst.OnThirstChanged -= OnThirstChanged;
         if (hunger != null)
-            hunger.onhungerChanged -= OnHungerChanged;
+            hunger.OnHungerChanged -= OnHungerChanged;
         if(sanity != null)
-            sanity.onSanityChanged -= OnSanityChanged;
+            sanity.OnSanityChanged -= OnSanityChanged;
         if(addiction != null)
-            addiction.onAddictionChanged -= OnAddiction;
+            addiction.OnAddictionChanged -= OnAddiction;
     }
 
     private void OnHealthChanged(float cur, float max)
